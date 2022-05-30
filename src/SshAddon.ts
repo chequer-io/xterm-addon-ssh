@@ -62,6 +62,7 @@ export class SshAddon implements ITerminalAddon {
   }
 
   public dispose(): void {
+    this._socket.close();
     for (const d of this._disposables) {
       d.dispose();
     }
