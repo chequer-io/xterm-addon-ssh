@@ -1,0 +1,22 @@
+{
+  "name": "xterm-addon-ssh",
+  "version": "0.0.1",
+  "description": "Ssh addon for xterm.js",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:chequer-io/xterm-addon-ssh.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^2.6.2",
+    "typescript": "^4.7.2",
+    "xterm": "^4.18.0"
+  }
+}
