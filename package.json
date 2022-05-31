@@ -7,6 +7,10 @@
     "type": "git",
     "url": "git@github.com:chequer-io/xterm-addon-ssh.git"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
