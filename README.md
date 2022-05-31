@@ -1,7 +1,7 @@
-![version](https://img.shields.io/npm/v/xterm-addon-ssh)
-![downloads](https://img.shields.io/npm/dm/xterm-addon-ssh)
-![license](https://img.shields.io/npm/l/xterm-addon-ssh)
-![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/xterm-addon-ssh)
+[![version](https://img.shields.io/npm/v/xterm-addon-ssh)](https://github.com/chequer-io/xterm-addon-ssh)
+[![downloads](https://img.shields.io/npm/dm/xterm-addon-ssh)](https://github.com/chequer-io/xterm-addon-ssh)
+[![license](https://img.shields.io/npm/l/xterm-addon-ssh)](https://github.com/chequer-io/xterm-addon-ssh)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/xterm-addon-ssh)](https://github.com/chequer-io/xterm-addon-ssh)
 
 # xterm-addon-ssh
 
