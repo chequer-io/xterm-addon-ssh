@@ -1,13 +1,30 @@
 import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
 import { MessageConverter, MessageType } from './protocol';
 
-export interface ISshOptions {
+export type EventName = 'connect' | 'close' | 'error' | 'message' | 'key';
+
+export interface SshEventMap {
+  connect: Event;
+  message: Event;
+  key: TerminalKeyEvent;
+  error: Event;
+  close: Event;
+}
+
+export type SshEventListener<T> = (event: T) => void;
+
+export interface SshOptions {
   serverUuid: string;
   header?: Record<string, string>;
   connectImmediately?: boolean;
+  onConnect?: SshEventListener<SshEventMap['connect']>;
+  onMessage?: SshEventListener<SshEventMap['message']>;
+  onKey?: SshEventListener<SshEventMap['key']>;
+  onError?: SshEventListener<SshEventMap['error']>;
+  onClose?: SshEventListener<SshEventMap['close']>;
 }
 
-export interface IKeyEvent {
+export interface TerminalKeyEvent {
   key: string;
   domEvent: KeyboardEvent;
 }
@@ -19,9 +36,14 @@ export class SshAddon implements ITerminalAddon {
   private readonly _disposables: IDisposable[] = [];
   private _terminal: Terminal | undefined;
 
+  private _eventListeners: Map<EventName, SshEventListener<Event>[]> =
+    new Map();
+
+  private _keyListeners: SshEventListener<TerminalKeyEvent>[] = [];
+
   public header: Record<string, string> = {};
 
-  public constructor(socket: WebSocket, options: ISshOptions) {
+  public constructor(socket: WebSocket, options: SshOptions) {
     this._socket = socket;
     this._socket.binaryType = 'arraybuffer';
 
@@ -31,6 +53,26 @@ export class SshAddon implements ITerminalAddon {
       this.header = options.header;
     }
 
+    if (options.onConnect) {
+      this._eventListeners.set('connect', [options.onConnect]);
+    }
+
+    if (options.onMessage) {
+      this._eventListeners.set('message', [options.onMessage]);
+    }
+
+    if (options.onError) {
+      this._eventListeners.set('error', [options.onError]);
+    }
+
+    if (options.onClose) {
+      this._eventListeners.set('close', [options.onClose]);
+    }
+
+    if (options.onKey) {
+      this._keyListeners.push(options.onKey);
+    }
+
     if (options.connectImmediately) {
       this._connectImmediately = true;
       this.connect();
@@ -38,6 +80,8 @@ export class SshAddon implements ITerminalAddon {
   }
 
   private _sendConnect() {
+    this._notifyListeners('connect', new Event('connect'));
+
     this._socket.send(
       MessageConverter.serialize(
         MessageType.CONNECT,
@@ -65,14 +109,17 @@ export class SshAddon implements ITerminalAddon {
     }
 
     this._disposables.push(
-      addSocketListener(this._socket, 'message', this._onMessage.bind(this)),
       terminal.onKey(this._onKey.bind(this)),
+      addSocketListener(this._socket, 'message', this._onMessage.bind(this)),
+      addSocketListener(this._socket, 'error', this._onError.bind(this)),
       addSocketListener(this._socket, 'close', this.dispose.bind(this)),
       addSocketListener(this._socket, 'error', this.dispose.bind(this)),
     );
   }
 
   public dispose(): void {
+    this._notifyListeners('close', new Event('close'));
+
     if (
       this._socket.readyState !== WebSocket.CLOSED ||
       this._socket.readyState !== WebSocket.CLOSING
@@ -85,7 +132,13 @@ export class SshAddon implements ITerminalAddon {
     }
   }
 
-  private _onKey(event: IKeyEvent) {
+  private _onError(error: Event) {
+    this._notifyListeners('error', error);
+  }
+
+  private _onKey(event: TerminalKeyEvent) {
+    this._notifyListeners('key', event);
+
     if (this._socket.readyState !== WebSocket.OPEN) {
       return;
     }
@@ -96,6 +149,8 @@ export class SshAddon implements ITerminalAddon {
   }
 
   private _onMessage(event: MessageEvent): void {
+    this._notifyListeners('message', event);
+
     const data = MessageConverter.deserialize(event.data);
 
     switch (data.type) {
@@ -106,6 +161,70 @@ export class SshAddon implements ITerminalAddon {
         break;
       default:
         break;
+    }
+  }
+
+  private _notifyListeners<T extends EventName>(
+    event: T,
+    data: SshEventMap[T],
+  ) {
+    if (event === 'key') {
+      this._keyListeners.forEach(listener => {
+        listener(data as TerminalKeyEvent);
+      });
+    } else {
+      const listeners = this._eventListeners.get(event);
+
+      if (listeners) {
+        listeners.forEach(listener => {
+          listener(data as Event);
+        });
+      }
+    }
+  }
+
+  public addEventListener<T extends keyof SshEventMap>(
+    event: T,
+    callback: SshEventListener<SshEventMap[T]>,
+  ) {
+    if (event === 'key') {
+      this._keyListeners.push(callback as SshEventListener<TerminalKeyEvent>);
+    } else {
+      if (this._eventListeners.has(event)) {
+        const listeners = this._eventListeners.get(
+          event,
+        ) as SshEventListener<Event>[];
+
+        this._eventListeners.set(
+          event,
+          listeners.concat(callback as SshEventListener<Event>),
+        );
+      } else {
+        this._eventListeners.set(event, [callback as SshEventListener<Event>]);
+      }
+    }
+  }
+
+  public removeEventListener<T extends EventName>(
+    event: T,
+    callback: SshEventListener<SshEventMap[T]>,
+  ) {
+    if (event === 'key') {
+      this._keyListeners = this._keyListeners.filter(
+        listener => listener !== callback,
+      );
+    } else {
+      const listeners = this._eventListeners.get(event);
+
+      if (!listeners) {
+        console.warn(`event name ${event} listeners not found`);
+        return;
+      }
+
+      this._eventListeners.set(
+        event,
+        listeners.filter(listener => listener !== callback),
+      );
     }
   }
 }
