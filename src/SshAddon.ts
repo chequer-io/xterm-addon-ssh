@@ -113,7 +113,6 @@ export class SshAddon implements ITerminalAddon {
       addSocketListener(this._socket, 'message', this._onMessage.bind(this)),
       addSocketListener(this._socket, 'error', this._onError.bind(this)),
       addSocketListener(this._socket, 'close', this.dispose.bind(this)),
-      addSocketListener(this._socket, 'error', this.dispose.bind(this)),
     );
   }
 
@@ -134,6 +133,7 @@ export class SshAddon implements ITerminalAddon {
 
   private _onError(error: Event) {
     this._notifyListeners('error', error);
+    this.dispose();
   }
 
   private _onKey(event: TerminalKeyEvent) {
