@@ -1,6 +1,5 @@
 import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
-import { MessageType } from './protocol/MessageType';
-import { MessageConverter } from './protocol/MessageConverter';
+import { MessageConverter, MessageType } from './protocol';
 
 export interface ISshOptions {
   serverUuid: string;
@@ -14,12 +13,13 @@ export interface IKeyEvent {
 }
 
 export class SshAddon implements ITerminalAddon {
-  private readonly _socket: WebSocket;
-  private _disposables: IDisposable[] = [];
-  private _terminal: Terminal | undefined;
-  public header: Record<string, string> = {};
-
   private readonly _serverUuid: string;
+  private readonly _connectImmediately: boolean = false;
+  private readonly _socket: WebSocket;
+  private readonly _disposables: IDisposable[] = [];
+  private _terminal: Terminal | undefined;
+
+  public header: Record<string, string> = {};
 
   public constructor(socket: WebSocket, options: ISshOptions) {
     this._socket = socket;
@@ -32,11 +32,12 @@ export class SshAddon implements ITerminalAddon {
     }
 
     if (options.connectImmediately) {
+      this._connectImmediately = true;
       this.connect();
     }
   }
 
-  public connect() {
+  private _sendConnect() {
     this._socket.send(
       MessageConverter.serialize(
         MessageType.CONNECT,
@@ -46,10 +47,20 @@ export class SshAddon implements ITerminalAddon {
     );
   }
 
+  public connect() {
+    if (this._socket.readyState === WebSocket.OPEN) {
+      this._sendConnect();
+    } else {
+      this._socket.onopen = () => {
+        this._sendConnect();
+      };
+    }
+  }
+
   public activate(terminal: Terminal): void {
     this._terminal = terminal;
 
-    if (this._socket.readyState !== WebSocket.OPEN) {
+    if (!this._connectImmediately) {
       this.connect();
     }
 
@@ -62,7 +73,13 @@ export class SshAddon implements ITerminalAddon {
   }
 
   public dispose(): void {
-    this._socket.close();
+    if (
+      this._socket.readyState !== WebSocket.CLOSED ||
+      this._socket.readyState !== WebSocket.CLOSING
+    ) {
+      this._socket.close();
+    }
+
     for (const d of this._disposables) {
       d.dispose();
     }
