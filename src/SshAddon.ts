@@ -227,6 +227,11 @@ export class SshAddon implements ITerminalAddon {
       );
     }
   }
+
+  public removeAllListeners() {
+    this._keyListeners = [];
+    this._eventListeners = new Map();
+  }
 }
 
 function addSocketListener<K extends keyof WebSocketEventMap>(

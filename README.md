@@ -39,7 +39,7 @@ terminal.loadAddon(sshAddon);
 ```typescript jsx
 import * as React from 'react';
 import { QPXterm } from 'qp-xtermjs';
-import { SshAddon } from 'xterm-addon-ssh';
+import { SshAddon, TerminalKeyEvent } from 'xterm-addon-ssh';
 import * as SockJS from 'sockjs-client';
 
 const sockjs = new SockJS('wss://127.0.0.1:8090');
@@ -54,12 +54,39 @@ const Term: React.FC = () => {
           'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
       },
       connectImmediately: true,
+      onKey: console.log,
     }),
   ).current;
 
   const onDidMount = React.useCallback((terminal: QPXterm) => {
     terminalRef.current = terminal;
   }, []);
+
+  React.useEffect(() => {
+    const callback = (event: Event | TerminalKeyEvent) => {
+      console.log(event);
+    };
+
+    sshAddon.addEventListener('connect', callback);
+    sshAddon.addEventListener('message', callback);
+    sshAddon.addEventListener('key', callback);
+    sshAddon.addEventListener('error', callback);
+    sshAddon.addEventListener('close', callback);
+
+    return () => {
+      sshAddon.removeEventListener('connect', callback);
+      sshAddon.removeEventListener('message', callback);
+      sshAddon.removeEventListener('key', callback);
+      sshAddon.removeEventListener('error', callback);
+      sshAddon.removeEventListener('close', callback);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      sshAddon.removeAllListeners();
+    };
+  });
 
   return <QPXterm onDidMount={onDidMount} addons={[sshAddon]} />;
 };
