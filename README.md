@@ -27,7 +27,7 @@ import * as SockJS from 'sockjs-client';
 const sockjs = new SockJS('wss://127.0.0.1:8090');
 
 const terminal = new Terminal();
-const sshAddon = new SshAddon(webSocket, {
+const sshAddon = new SshAddon(sockjs, {
   serverUuid: '123e4567-e89b-12d3-a456-426614174000',
   header: {
     Authorization:
@@ -52,7 +52,7 @@ const sockjs = new SockJS('wss://127.0.0.1:8090');
 const Term: React.FC = () => {
   const terminalRef = useRef<QPXterm | null>();
   const sshAddon = React.useRef(
-    new SshAddon(webSocket, {
+    new SshAddon(sockjs, {
       serverUuid: '123e4567-e89b-12d3-a456-426614174000',
       header: {
         Authorization:
