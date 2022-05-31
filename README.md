@@ -17,6 +17,7 @@ npm install --save xterm-addon-ssh
 ```typescript
 import { Terminal } from 'xterm';
 import { SshAddon } from 'xterm-addon-ssh';
+import * as SockJS from 'sockjs-client';
 
 const sockjs = new SockJS('wss://127.0.0.1:8090');
 
@@ -38,6 +39,7 @@ terminal.loadAddon(attachAddon);
 import * as React from 'react';
 import { QPXterm } from 'qp-xtermjs';
 import { SshAddon } from 'xterm-addon-ssh';
+import * as SockJS from 'sockjs-client';
 
 const sockjs = new SockJS('wss://127.0.0.1:8090');
 
