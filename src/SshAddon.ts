@@ -49,7 +49,7 @@ export class SshAddon implements ITerminalAddon {
   public activate(terminal: Terminal): void {
     this._terminal = terminal;
 
-    if (this._socket.readyState !== -1) {
+    if (this._socket.readyState !== WebSocket.OPEN) {
       this.connect();
     }
 
@@ -69,7 +69,7 @@ export class SshAddon implements ITerminalAddon {
   }
 
   private _onKey(event: IKeyEvent) {
-    if (this._socket.readyState !== 1) {
+    if (this._socket.readyState !== WebSocket.OPEN) {
       return;
     }
 
