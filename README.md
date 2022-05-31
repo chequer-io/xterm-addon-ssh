@@ -1,3 +1,8 @@
+![version](https://img.shields.io/npm/v/xterm-addon-ssh)
+![downloads](https://img.shields.io/npm/dm/xterm-addon-ssh)
+![license](https://img.shields.io/npm/l/xterm-addon-ssh)
+![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/xterm-addon-ssh)
+
 # xterm-addon-ssh
 
 ## Overview
