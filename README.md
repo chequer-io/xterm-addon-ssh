@@ -22,7 +22,7 @@ import * as SockJS from 'sockjs-client';
 const sockjs = new SockJS('wss://127.0.0.1:8090');
 
 const terminal = new Terminal();
-const SshAddon = new SshAddon(webSocket, {
+const sshAddon = new SshAddon(webSocket, {
   serverUuid: '123e4567-e89b-12d3-a456-426614174000',
   header: {
     Authorization:
@@ -30,7 +30,8 @@ const SshAddon = new SshAddon(webSocket, {
   },
   connectImmediately: true,
 });
-terminal.loadAddon(attachAddon);
+
+terminal.loadAddon(sshAddon);
 ```
 
 - React with Typescript
