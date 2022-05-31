@@ -2,7 +2,26 @@
   "name": "xterm-addon-ssh",
   "version": "0.0.4",
   "description": "Ssh addon for xterm.js",
+  "keywords": [
+    "xterm",
+    "xterm.js",
+    "ssh",
+    "terminal",
+    "iterm"
+  ],
+  "author": {
+    "email": "noel@chequer.io",
+    "name": "Noel Kim"
+  },
+  "maintainers": [
+    {
+      "email": "noel@chequer.io",
+      "name": "Noel Kim"
+    }
+  ],
+  "typings": "dist/index.d.ts",
   "main": "dist/index.js",
+  "readme": "README.md",
   "repository": {
     "type": "git",
     "url": "git@github.com:chequer-io/xterm-addon-ssh.git"
@@ -16,8 +35,6 @@
     "prepublishOnly": "npm run build",
     "postversion": "git push && git push --tags"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "devDependencies": {
     "prettier": "^2.6.2",
