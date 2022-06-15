@@ -118,6 +118,7 @@ export class SshAddon implements ITerminalAddon {
 
   public dispose(): void {
     this._notifyListeners('close', new Event('close'));
+    this.removeAllListeners();
 
     if (
       this._socket.readyState !== WebSocket.CLOSED ||
