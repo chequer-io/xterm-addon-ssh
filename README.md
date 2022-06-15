@@ -24,7 +24,7 @@ import { Terminal } from 'xterm';
 import { SshAddon } from 'xterm-addon-ssh';
 import * as SockJS from 'sockjs-client';
 
-const sockjs = new SockJS('wss://127.0.0.1:8090');
+const sockjs = new SockJS('https://127.0.0.1:8080');
 
 const terminal = new Terminal();
 const sshAddon = new SshAddon(sockjs, {
@@ -47,7 +47,7 @@ import { QPXterm } from 'qp-xtermjs';
 import { SshAddon, TerminalKeyEvent } from 'xterm-addon-ssh';
 import * as SockJS from 'sockjs-client';
 
-const sockjs = new SockJS('wss://127.0.0.1:8090');
+const sockjs = new SockJS('https://127.0.0.1:8080');
 
 const Term: React.FC = () => {
   const terminalRef = useRef<QPXterm | null>();
