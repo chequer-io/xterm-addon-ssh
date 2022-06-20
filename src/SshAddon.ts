@@ -50,11 +50,11 @@ export class SshAddon implements ITerminalAddon {
   private readonly _disposables: IDisposable[] = [];
   private _terminal: Terminal | undefined;
 
+  private _offlineQueue: string[] = [];
+
   private _eventListeners: Map<EventName, SshEventListener<Event>[]> =
     new Map();
-
   private _resizeEventListeners: SshEventListener<ResizeEvent>[] = [];
-
   private _keyListeners: SshEventListener<TerminalKeyEvent>[] = [];
 
   public header: Record<string, string> = {};
@@ -97,6 +97,12 @@ export class SshAddon implements ITerminalAddon {
       this._connectImmediately = true;
       this.connect();
     }
+
+    this._socket.onopen = () => {
+      this._offlineQueue
+        .splice(0, this._offlineQueue.length)
+        .forEach(this._send);
+    };
   }
 
   private _sendConnect() {
@@ -106,7 +112,7 @@ export class SshAddon implements ITerminalAddon {
 
     this._notifyListeners('connect', new Event('connect'));
 
-    this._socket.send(
+    this._send(
       MessageConverter.serialize(
         MessageType.CONNECT,
         {
@@ -119,13 +125,7 @@ export class SshAddon implements ITerminalAddon {
   }
 
   public connect() {
-    if (this._socket.readyState === WebSocket.OPEN) {
-      this._sendConnect();
-    } else {
-      this._socket.onopen = () => {
-        this._sendConnect();
-      };
-    }
+    this._sendConnect();
   }
 
   public activate(terminal: Terminal): void {
@@ -172,7 +172,7 @@ export class SshAddon implements ITerminalAddon {
       return;
     }
 
-    this._socket.send(
+    this._send(
       MessageConverter.serialize(MessageType.MESSAGE, event.key, this.header),
     );
   }
@@ -200,7 +200,7 @@ export class SshAddon implements ITerminalAddon {
 
     this._notifyListeners('resize', event);
 
-    this._socket.send(
+    this._send(
       MessageConverter.serialize(
         MessageType.RESIZE,
         {
@@ -222,6 +222,14 @@ export class SshAddon implements ITerminalAddon {
       pixelWidth: terminal.element.clientWidth,
       pixelHeight: terminal.element.clientHeight,
     };
+  }
+
+  private _send(message: string): void {
+    if (this._socket.readyState === WebSocket.OPEN) {
+      this._socket.send(message);
+    } else {
+      this._offlineQueue.push(message);
+    }
   }
 
   private _notifyListeners<T extends EventName>(
