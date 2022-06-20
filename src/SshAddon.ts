@@ -29,7 +29,6 @@ export type SshEventListener<T> = (event: T) => void;
 export interface SshOptions {
   serverUuid: string;
   header?: Record<string, string>;
-  connectImmediately?: boolean;
   onConnect?: SshEventListener<SshEventMap['connect']>;
   onMessage?: SshEventListener<SshEventMap['message']>;
   onKey?: SshEventListener<SshEventMap['key']>;
@@ -45,7 +44,6 @@ export interface TerminalKeyEvent {
 
 export class SshAddon implements ITerminalAddon {
   private readonly _serverUuid: string;
-  private readonly _connectImmediately: boolean = false;
   private readonly _socket: WebSocket;
   private readonly _disposables: IDisposable[] = [];
   private _terminal: Terminal | undefined;
@@ -93,11 +91,6 @@ export class SshAddon implements ITerminalAddon {
       this._keyListeners.push(options.onKey);
     }
 
-    if (options.connectImmediately) {
-      this._connectImmediately = true;
-      this.connect();
-    }
-
     this._socket.onopen = () => {
       this._offlineQueue
         .splice(0, this._offlineQueue.length)
@@ -130,10 +123,7 @@ export class SshAddon implements ITerminalAddon {
 
   public activate(terminal: Terminal): void {
     this._terminal = terminal;
-
-    if (!this._connectImmediately) {
-      this.connect();
-    }
+    this.connect();
 
     this._disposables.push(
       terminal.onKey(this._onKey.bind(this)),
