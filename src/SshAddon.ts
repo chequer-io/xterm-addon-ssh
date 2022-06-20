@@ -53,6 +53,8 @@ export class SshAddon implements ITerminalAddon {
   private _eventListeners: Map<EventName, SshEventListener<Event>[]> =
     new Map();
 
+  private _resizeEventListeners: SshEventListener<ResizeEvent>[] = [];
+
   private _keyListeners: SshEventListener<TerminalKeyEvent>[] = [];
 
   public header: Record<string, string> = {};
@@ -81,6 +83,10 @@ export class SshAddon implements ITerminalAddon {
 
     if (options.onClose) {
       this._eventListeners.set('close', [options.onClose]);
+    }
+
+    if (options.onResize) {
+      this._resizeEventListeners.push(options.onResize);
     }
 
     if (options.onKey) {
@@ -222,18 +228,25 @@ export class SshAddon implements ITerminalAddon {
     event: T,
     data: SshEventMap[T],
   ) {
-    if (event === 'key') {
-      this._keyListeners.forEach(listener => {
-        listener(data as TerminalKeyEvent);
-      });
-    } else {
-      const listeners = this._eventListeners.get(event);
-
-      if (listeners) {
-        listeners.forEach(listener => {
-          listener(data as Event);
+    switch (event) {
+      case 'key':
+        this._keyListeners.forEach(listener => {
+          listener(data as TerminalKeyEvent);
         });
-      }
+        break;
+      case 'resize':
+        this._resizeEventListeners.forEach(listener => {
+          listener(data as ResizeEvent);
+        });
+        break;
+      default:
+        const listeners = this._eventListeners.get(event);
+
+        if (listeners) {
+          listeners.forEach(listener => {
+            listener(data as Event);
+          });
+        }
     }
   }
 
