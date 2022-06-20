@@ -1,7 +1,19 @@
 import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
-import { MessageConverter, MessageType } from './protocol';
+import { ITerminalSize, MessageConverter, MessageType } from './protocol';
+import TerminalNotMountedError from './protocol/errors/TerminalNotMountedError';
 
-export type EventName = 'connect' | 'close' | 'error' | 'message' | 'key';
+export type EventName =
+  | 'connect'
+  | 'close'
+  | 'error'
+  | 'message'
+  | 'key'
+  | 'resize';
+
+export interface ResizeEvent {
+  cols: number;
+  rows: number;
+}
 
 export interface SshEventMap {
   connect: Event;
@@ -9,6 +21,7 @@ export interface SshEventMap {
   key: TerminalKeyEvent;
   error: Event;
   close: Event;
+  resize: ResizeEvent;
 }
 
 export type SshEventListener<T> = (event: T) => void;
@@ -22,6 +35,7 @@ export interface SshOptions {
   onKey?: SshEventListener<SshEventMap['key']>;
   onError?: SshEventListener<SshEventMap['error']>;
   onClose?: SshEventListener<SshEventMap['close']>;
+  onResize?: SshEventListener<SshEventMap['resize']>;
 }
 
 export interface TerminalKeyEvent {
@@ -38,6 +52,8 @@ export class SshAddon implements ITerminalAddon {
 
   private _eventListeners: Map<EventName, SshEventListener<Event>[]> =
     new Map();
+
+  private _resizeEventListeners: SshEventListener<ResizeEvent>[] = [];
 
   private _keyListeners: SshEventListener<TerminalKeyEvent>[] = [];
 
@@ -69,6 +85,10 @@ export class SshAddon implements ITerminalAddon {
       this._eventListeners.set('close', [options.onClose]);
     }
 
+    if (options.onResize) {
+      this._resizeEventListeners.push(options.onResize);
+    }
+
     if (options.onKey) {
       this._keyListeners.push(options.onKey);
     }
@@ -80,12 +100,19 @@ export class SshAddon implements ITerminalAddon {
   }
 
   private _sendConnect() {
+    if (!this._terminal) {
+      throw new TerminalNotMountedError();
+    }
+
     this._notifyListeners('connect', new Event('connect'));
 
     this._socket.send(
       MessageConverter.serialize(
         MessageType.CONNECT,
-        this._serverUuid,
+        {
+          serverUuid: this._serverUuid,
+          size: SshAddon._getSize(this._terminal),
+        },
         this.header,
       ),
     );
@@ -110,6 +137,7 @@ export class SshAddon implements ITerminalAddon {
 
     this._disposables.push(
       terminal.onKey(this._onKey.bind(this)),
+      terminal.onResize(this._onResize.bind(this)),
       addSocketListener(this._socket, 'message', this._onMessage.bind(this)),
       addSocketListener(this._socket, 'error', this._onError.bind(this)),
       addSocketListener(this._socket, 'close', this.dispose.bind(this)),
@@ -165,22 +193,60 @@ export class SshAddon implements ITerminalAddon {
     }
   }
 
+  private _onResize(event: ResizeEvent) {
+    if (!this._terminal) {
+      throw new TerminalNotMountedError();
+    }
+
+    this._notifyListeners('resize', event);
+
+    this._socket.send(
+      MessageConverter.serialize(
+        MessageType.RESIZE,
+        {
+          size: SshAddon._getSize(this._terminal),
+        },
+        this.header,
+      ),
+    );
+  }
+
+  private static _getSize(terminal: Terminal): ITerminalSize {
+    if (!terminal.element) {
+      throw new TerminalNotMountedError();
+    }
+
+    return {
+      cols: terminal.cols,
+      rows: terminal.rows,
+      pixelWidth: terminal.element.clientWidth,
+      pixelHeight: terminal.element.clientHeight,
+    };
+  }
+
   private _notifyListeners<T extends EventName>(
     event: T,
     data: SshEventMap[T],
   ) {
-    if (event === 'key') {
-      this._keyListeners.forEach(listener => {
-        listener(data as TerminalKeyEvent);
-      });
-    } else {
-      const listeners = this._eventListeners.get(event);
-
-      if (listeners) {
-        listeners.forEach(listener => {
-          listener(data as Event);
+    switch (event) {
+      case 'key':
+        this._keyListeners.forEach(listener => {
+          listener(data as TerminalKeyEvent);
         });
-      }
+        break;
+      case 'resize':
+        this._resizeEventListeners.forEach(listener => {
+          listener(data as ResizeEvent);
+        });
+        break;
+      default:
+        const listeners = this._eventListeners.get(event);
+
+        if (listeners) {
+          listeners.forEach(listener => {
+            listener(data as Event);
+          });
+        }
     }
   }
 

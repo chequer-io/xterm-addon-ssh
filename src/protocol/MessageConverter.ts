@@ -1,5 +1,5 @@
 import { MessageType, TMessageType } from './MessageType';
-import { getMessageTypeString } from './utils/getMessageTypeString';
+import { getMessageTypeString } from './utils';
 import { IMessage, ITerminalMessage } from './IMessage';
 
 export class MessageConverter {
@@ -11,30 +11,16 @@ export class MessageConverter {
     return type;
   }
 
-  public static serialize(
+  public static serialize<T>(
     type: TMessageType,
-    message: string,
+    body: T,
     header: Record<string, string>,
   ) {
-    switch (MessageConverter.normalizeMessageType(type)) {
-      case MessageType.CONNECT:
-        return JSON.stringify({
-          type: getMessageTypeString(type),
-          header,
-          body: {
-            serverUuid: message,
-          },
-        });
-      case MessageType.MESSAGE:
-      default:
-        return JSON.stringify({
-          type: getMessageTypeString(type),
-          header,
-          body: {
-            message,
-          },
-        });
-    }
+    return JSON.stringify({
+      type: getMessageTypeString(type),
+      header,
+      body,
+    });
   }
 
   public static deserialize(data: string): ITerminalMessage {
