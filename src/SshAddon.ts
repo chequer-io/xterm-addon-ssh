@@ -48,8 +48,6 @@ export class SshAddon implements ITerminalAddon {
   private readonly _disposables: IDisposable[] = [];
   private _terminal: Terminal | undefined;
 
-  private _offlineQueue: string[] = [];
-
   private _eventListeners: Map<EventName, SshEventListener<Event>[]> =
     new Map();
   private _resizeEventListeners: SshEventListener<ResizeEvent>[] = [];
@@ -90,12 +88,6 @@ export class SshAddon implements ITerminalAddon {
     if (options.onKey) {
       this._keyListeners.push(options.onKey);
     }
-
-    this._socket.onopen = () => {
-      this._offlineQueue
-        .splice(0, this._offlineQueue.length)
-        .forEach(this._send);
-    };
   }
 
   private _sendConnect() {
@@ -218,7 +210,9 @@ export class SshAddon implements ITerminalAddon {
     if (this._socket.readyState === WebSocket.OPEN) {
       this._socket.send(message);
     } else {
-      this._offlineQueue.push(message);
+      this._socket.addEventListener('open', () => this._send(message), {
+        once: true,
+      });
     }
   }
 
