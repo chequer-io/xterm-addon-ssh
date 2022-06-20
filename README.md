@@ -7,7 +7,9 @@
 
 ## Overview
 
-It forwards to socket server for communicate via ssh.
+This library sends to the socket server for communication with SSH.
+
+If you want to communicate to SSH directly, use [xterm-addon-attach](https://www.npmjs.com/package/xterm-addon-attach)
 
 ## Install
 
