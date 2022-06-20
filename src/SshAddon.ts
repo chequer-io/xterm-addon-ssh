@@ -150,10 +150,6 @@ export class SshAddon implements ITerminalAddon {
   private _onKey(event: TerminalKeyEvent) {
     this._notifyListeners('key', event);
 
-    if (this._socket.readyState !== WebSocket.OPEN) {
-      return;
-    }
-
     this._send(
       MessageConverter.serialize(MessageType.MESSAGE, event.key, this.header),
     );
