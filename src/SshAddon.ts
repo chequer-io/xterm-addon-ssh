@@ -1,5 +1,6 @@
 import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
 import { ITerminalSize, MessageConverter, MessageType } from './protocol';
+import TerminalNotMountedError from './protocol/errors/TerminalNotMountedError';
 
 export type EventName =
   | 'connect'
@@ -93,20 +94,22 @@ export class SshAddon implements ITerminalAddon {
   }
 
   private _sendConnect() {
-    if (this._terminal) {
-      this._notifyListeners('connect', new Event('connect'));
-
-      this._socket.send(
-        MessageConverter.serialize(
-          MessageType.CONNECT,
-          {
-            serverUuid: this._serverUuid,
-            size: SshAddon._getSize(this._terminal),
-          },
-          this.header,
-        ),
-      );
+    if (!this._terminal) {
+      throw new TerminalNotMountedError();
     }
+
+    this._notifyListeners('connect', new Event('connect'));
+
+    this._socket.send(
+      MessageConverter.serialize(
+        MessageType.CONNECT,
+        {
+          serverUuid: this._serverUuid,
+          size: SshAddon._getSize(this._terminal),
+        },
+        this.header,
+      ),
+    );
   }
 
   public connect() {
@@ -186,7 +189,7 @@ export class SshAddon implements ITerminalAddon {
 
   private _onResize(event: ResizeEvent) {
     if (!this._terminal) {
-      throw new Error('Terminal does not mounted');
+      throw new TerminalNotMountedError();
     }
 
     this._notifyListeners('resize', event);
@@ -204,7 +207,7 @@ export class SshAddon implements ITerminalAddon {
 
   private static _getSize(terminal: Terminal): ITerminalSize {
     if (!terminal.element) {
-      throw new Error('Terminal does not mounted.');
+      throw new TerminalNotMountedError();
     }
 
     return {
