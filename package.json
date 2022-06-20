@@ -1,6 +1,6 @@
 {
   "name": "xterm-addon-ssh",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Ssh addon for xterm.js",
   "keywords": [
     "xterm",
