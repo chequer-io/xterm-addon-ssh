@@ -151,7 +151,13 @@ export class SshAddon implements ITerminalAddon {
     this._notifyListeners('key', event);
 
     this._send(
-      MessageConverter.serialize(MessageType.MESSAGE, event.key, this.header),
+      MessageConverter.serialize(
+        MessageType.MESSAGE,
+        {
+          message: event.key,
+        },
+        this.header,
+      ),
     );
   }
 
