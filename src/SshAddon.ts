@@ -28,6 +28,7 @@ export type SshEventListener<T> = (event: T) => void;
 
 export interface SshOptions {
   serverUuid: string;
+  terminalType?: string;
   header?: Record<string, string>;
   onConnect?: SshEventListener<SshEventMap['connect']>;
   onMessage?: SshEventListener<SshEventMap['message']>;
@@ -44,6 +45,7 @@ export interface TerminalKeyEvent {
 
 export class SshAddon implements ITerminalAddon {
   private readonly _serverUuid: string;
+  private readonly _terminalType: string = 'xterm-256color';
   private readonly _socket: WebSocket;
   private readonly _disposables: IDisposable[] = [];
   private _terminal: Terminal | undefined;
@@ -60,6 +62,10 @@ export class SshAddon implements ITerminalAddon {
     this._socket.binaryType = 'arraybuffer';
 
     this._serverUuid = options.serverUuid;
+
+    if (options.terminalType) {
+      this._terminalType = options.terminalType;
+    }
 
     if (options.header) {
       this.header = options.header;
@@ -103,6 +109,7 @@ export class SshAddon implements ITerminalAddon {
         {
           serverUuid: this._serverUuid,
           size: SshAddon._getSize(this._terminal),
+          terminalType: this._terminalType,
         },
         this.header,
       ),
